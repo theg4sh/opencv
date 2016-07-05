@@ -1834,8 +1834,9 @@ static void icvShowSaveAsDialog(GtkWidget* widget, CvWindow* window)
 static gboolean icvOnKeyPress(GtkWidget* widget, GdkEventKey* event, gpointer user_data)
 {
     int code = 0;
+    int state = event->state;
 
-    if ( BIT_ALLIN(event->state, GDK_CONTROL_MASK) && (event->keyval == GDK_s || event->keyval == GDK_S))
+    if ( BIT_ALLIN(state, GDK_CONTROL_MASK) && (event->keyval == GDK_s || event->keyval == GDK_S))
     {
         try
         {
@@ -1863,7 +1864,14 @@ static gboolean icvOnKeyPress(GtkWidget* widget, GdkEventKey* event, gpointer us
         code = event->keyval;
     }
 
-    code |= event->state << 16;
+    int flags = BIT_MAP(state, GDK_SHIFT_MASK,   CV_EVENT_FLAG_SHIFTKEY) |
+        BIT_MAP(state, GDK_CONTROL_MASK, CV_EVENT_FLAG_CTRLKEY)  |
+        BIT_MAP(state, GDK_MOD1_MASK,    CV_EVENT_FLAG_ALTKEY)   |
+        BIT_MAP(state, GDK_MOD2_MASK,    CV_EVENT_FLAG_ALTKEY)   |
+        BIT_MAP(state, GDK_BUTTON1_MASK, CV_EVENT_FLAG_LBUTTON)  |
+        BIT_MAP(state, GDK_BUTTON2_MASK, CV_EVENT_FLAG_MBUTTON)  |
+        BIT_MAP(state, GDK_BUTTON3_MASK, CV_EVENT_FLAG_RBUTTON);
+    code |= (flags << 16);
 
 #ifdef HAVE_GTHREAD
     if(thread_started) g_mutex_lock(last_key_mutex);
