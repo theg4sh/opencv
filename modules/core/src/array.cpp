@@ -545,7 +545,7 @@ cvCreateSparseMat( int dims, const int* sizes, int type )
     if( pix_size == 0 )
         CV_Error( CV_StsUnsupportedFormat, "invalid array data type" );
 
-    if( dims <= 0 || dims > CV_MAX_DIM_HEAP )
+    if( dims <= 0 || dims > CV_MAX_DIM )
         CV_Error( CV_StsOutOfRange, "bad number of dimensions" );
 
     if( !sizes )
@@ -834,6 +834,9 @@ cvCreateData( CvArr* arr )
 
         if( !CvIPL.allocateData )
         {
+            const int64 imageSize_tmp = (int64)img->widthStep*(int64)img->height;
+            if( (int64)img->imageSize != imageSize_tmp )
+                CV_Error( CV_StsNoMem, "Overflow for imageSize" );
             img->imageData = img->imageDataOrigin =
                         (char*)cvAlloc( (size_t)img->imageSize );
         }
@@ -941,7 +944,10 @@ cvSetData( CvArr* arr, void* data, int step )
             img->widthStep = min_step;
         }
 
-        img->imageSize = img->widthStep * img->height;
+        const int64 imageSize_tmp = (int64)img->widthStep*(int64)img->height;
+        img->imageSize = (int)imageSize_tmp;
+        if( (int64)img->imageSize != imageSize_tmp )
+            CV_Error( CV_StsNoMem, "Overflow for imageSize" );
         img->imageData = img->imageDataOrigin = (char*)data;
 
         if( (((int)(size_t)data | step) & 7) == 0 &&
@@ -1833,6 +1839,7 @@ cvPtr2D( const CvArr* arr, int y, int x, int* _type )
     }
     else if( CV_IS_SPARSE_MAT( arr ))
     {
+        CV_Assert(((CvSparseMat*)arr)->dims == 2);
         int idx[] = { y, x };
         ptr = icvGetNodePtr( (CvSparseMat*)arr, idx, _type, 1, 0 );
     }
@@ -2958,7 +2965,10 @@ cvInitImageHeader( IplImage * image, CvSize size, int depth,
     image->widthStep = (((image->width * image->nChannels *
          (image->depth & ~IPL_DEPTH_SIGN) + 7)/8)+ align - 1) & (~(align - 1));
     image->origin = origin;
-    image->imageSize = image->widthStep * image->height;
+    const int64 imageSize_tmp = (int64)image->widthStep*(int64)image->height;
+    image->imageSize = (int)imageSize_tmp;
+    if( (int64)image->imageSize != imageSize_tmp )
+        CV_Error( CV_StsNoMem, "Overflow for imageSize" );
 
     return image;
 }

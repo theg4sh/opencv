@@ -42,7 +42,7 @@
 #include "precomp.hpp"
 #include "opencv2/imgproc.hpp"
 
-#ifndef WIN32
+#ifndef _WIN32
 
 #if defined (HAVE_GTK)
 
@@ -495,7 +495,7 @@ GType cvImageWidget_get_type (void){
           (GClassInitFunc) cvImageWidget_class_init,
           sizeof(CvImageWidget),
           (GInstanceInitFunc) cvImageWidget_init,
-          (GTypeFlags)NULL
+          (GTypeFlags)0
           );
     }
 
@@ -619,9 +619,13 @@ CV_IMPL int cvStartWindowThread(){
     // conditional that indicates a key has been pressed
     cond_have_key = g_cond_new();
 
+#if !GLIB_CHECK_VERSION(2, 32, 0)
     // this is the window update thread
     window_thread = g_thread_create((GThreadFunc) icvWindowThreadLoop,
                     NULL, TRUE, NULL);
+#else
+    window_thread = g_thread_new("OpenCV window update", (GThreadFunc)icvWindowThreadLoop, NULL);
+#endif
     }
     thread_started = window_thread!=NULL;
     return thread_started;
@@ -947,7 +951,8 @@ static gboolean cvImageWidget_draw(GtkWidget* widget, cairo_t *cr, gpointer data
   }
 
   cairo_paint(cr);
-  g_object_unref(pixbuf);
+  if(pixbuf)
+      g_object_unref(pixbuf);
   return TRUE;
 }
 
@@ -1001,7 +1006,8 @@ static gboolean cvImageWidget_expose(GtkWidget* widget, GdkEventExpose* event, g
   }
 
   cairo_paint(cr);
-  g_object_unref(pixbuf);
+  if(pixbuf)
+      g_object_unref(pixbuf);
   cairo_destroy(cr);
   return TRUE;
 }
@@ -1613,6 +1619,10 @@ CV_IMPL void cvSetTrackbarPos( const char* trackbar_name, const char* window_nam
         if( pos > trackbar->maxval )
             pos = trackbar->maxval;
     }
+    else
+    {
+        CV_ERROR( CV_StsNullPtr, "No trackbar found" );
+    }
 
     CV_LOCK_MUTEX();
 
@@ -1983,7 +1993,7 @@ static gboolean icvOnMouse( GtkWidget *widget, GdkEvent *event, gpointer user_da
             break;
 #endif //GTK_VERSION3_4
         case GDK_SCROLL_LEFT:  cv_event = CV_EVENT_MOUSEHWHEEL;
-        case GDK_SCROLL_UP:    flags |= ((-(int)1 << 16));
+        case GDK_SCROLL_UP:    flags |= ~0xffff;
             break;
         case GDK_SCROLL_RIGHT: cv_event = CV_EVENT_MOUSEHWHEEL;
         case GDK_SCROLL_DOWN:  flags |= (((int)1 << 16));
@@ -2087,6 +2097,6 @@ CV_IMPL int cvWaitKey( int delay )
 
 
 #endif  // HAVE_GTK
-#endif  // WIN32
+#endif  // _WIN32
 
 /* End of file. */

@@ -41,8 +41,8 @@
 //
 //M*/
 
-#ifndef __OPENCV_CORE_TYPES_HPP__
-#define __OPENCV_CORE_TYPES_HPP__
+#ifndef OPENCV_CORE_TYPES_HPP
+#define OPENCV_CORE_TYPES_HPP
 
 #ifndef __cplusplus
 #  error types.hpp header must be compiled as C++
@@ -177,6 +177,7 @@ public:
 };
 
 typedef Point_<int> Point2i;
+typedef Point_<int64> Point2l;
 typedef Point_<float> Point2f;
 typedef Point_<double> Point2d;
 typedef Point2i Point;
@@ -308,6 +309,7 @@ public:
 };
 
 typedef Size_<int> Size2i;
+typedef Size_<int64> Size2l;
 typedef Size_<float> Size2f;
 typedef Size_<double> Size2d;
 typedef Size2i Size;
@@ -481,8 +483,10 @@ public:
     @param pts The points array for storing rectangle vertices.
     */
     void points(Point2f pts[]) const;
-    //! returns the minimal up-right rectangle containing the rotated rectangle
+    //! returns the minimal up-right integer rectangle containing the rotated rectangle
     Rect boundingRect() const;
+    //! returns the minimal (exact) floating point rectangle containing the rotated rectangle, not intended for use with images
+    Rect_<float> boundingRect2f() const;
 
     Point2f center; //< the rectangle mass center
     Size2f size;    //< width and height of the rectangle
@@ -568,7 +572,7 @@ public:
 
 /** @brief Template class for a 4-element vector derived from Vec.
 
-Being derived from Vec\<_Tp, 4\> , Scalar_ and Scalar can be used just as typical 4-element
+Being derived from Vec\<_Tp, 4\> , Scalar\_ and Scalar can be used just as typical 4-element
 vectors. In addition, they can be converted to/from CvScalar . The type Scalar is widely used in
 OpenCV to pass pixel values.
 */
@@ -1036,7 +1040,8 @@ Complex<_Tp> operator / (const Complex<_Tp>& a, const Complex<_Tp>& b)
 template<typename _Tp> static inline
 Complex<_Tp>& operator /= (Complex<_Tp>& a, const Complex<_Tp>& b)
 {
-    return (a = a / b);
+    a = a / b;
+    return a;
 }
 
 template<typename _Tp> static inline
@@ -1588,7 +1593,10 @@ Size_<_Tp>& Size_<_Tp>::operator = (const Size_<_Tp>& sz)
 template<typename _Tp> inline
 _Tp Size_<_Tp>::area() const
 {
-    return width * height;
+    const _Tp result = width * height;
+    CV_DbgAssert(!std::numeric_limits<_Tp>::is_integer
+        || width == 0 || result / width == height); // make sure the result fits in the return value
+    return result;
 }
 
 template<typename _Tp> static inline
@@ -1727,7 +1735,10 @@ Size_<_Tp> Rect_<_Tp>::size() const
 template<typename _Tp> inline
 _Tp Rect_<_Tp>::area() const
 {
-    return width * height;
+    const _Tp result = width * height;
+    CV_DbgAssert(!std::numeric_limits<_Tp>::is_integer
+        || width == 0 || result / width == height); // make sure the result fits in the return value
+    return result;
 }
 
 template<typename _Tp> template<typename _Tp2> inline
@@ -2257,4 +2268,4 @@ TermCriteria::TermCriteria(int _type, int _maxCount, double _epsilon)
 
 } // cv
 
-#endif //__OPENCV_CORE_TYPES_HPP__
+#endif //OPENCV_CORE_TYPES_HPP

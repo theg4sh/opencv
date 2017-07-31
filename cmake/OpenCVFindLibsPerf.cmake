@@ -2,22 +2,6 @@
 #  Detect other 3rd-party performance and math libraries
 # ----------------------------------------------------------------------------
 
-# --- Lapack ---
-if(WITH_LAPACK)
-  find_package(LAPACK)
-  if(LAPACK_FOUND)
-    find_path(LAPACKE_INCLUDE_DIR "lapacke.h")
-    if(LAPACKE_INCLUDE_DIR)
-      find_path(CBLAS_INCLUDE_DIR "cblas.h")
-      if(CBLAS_INCLUDE_DIR)
-        set(HAVE_LAPACK 1)
-        ocv_include_directories(${LAPACKE_INCLUDE_DIR} ${CBLAS_INCLUDE_DIR})
-        list(APPEND OPENCV_LINKER_LIBS ${LAPACK_LIBRARIES})
-      endif()
-    endif()
-  endif()
-endif()
-
 # --- TBB ---
 if(WITH_TBB)
   include("${OpenCV_SOURCE_DIR}/cmake/OpenCVDetectTBB.cmake")
@@ -27,6 +11,11 @@ endif(WITH_TBB)
 if(WITH_IPP)
   include("${OpenCV_SOURCE_DIR}/cmake/OpenCVFindIPP.cmake")
   if(HAVE_IPP)
+    include("${OpenCV_SOURCE_DIR}/cmake/OpenCVFindIPPIW.cmake")
+    if(HAVE_IPP_IW)
+      ocv_include_directories(${IPP_IW_INCLUDES})
+      list(APPEND OPENCV_LINKER_LIBS ${IPP_IW_LIBRARIES})
+    endif()
     ocv_include_directories(${IPP_INCLUDE_DIRS})
     list(APPEND OPENCV_LINKER_LIBS ${IPP_LIBRARIES})
   endif()
